@@ -133,6 +133,7 @@ if __name__=="__main__":
     dataset_ids = []
     for i, each_wav_dir in enumerate(tqdm(wav_dirs)):
         speaker = os.path.basename(each_wav_dir)[1:]
+        print(speaker, '|', speaker_info[speaker])
         condition = speaker_info[speaker]['accent'] == 'English'
         if i >= start_id and condition:
             dataset_ids += process_data(os.path.join(wav_dir, each_wav_dir),
