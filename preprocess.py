@@ -38,7 +38,18 @@ def get_wav_mel(path):
 
 
 
-
+def get_info(wav_dir):
+    path_from = os.path.join(wav_dir, '..')
+    with open(os.path.join(path_from, 'speaker-info.txt'), 'r') as f:
+        splited_lines = [line.strip().split() for line in f][1:]
+        speakers = [line[0] for line in splited_lines]
+        genders = [line[2] for line in splited_lines]
+        accents = [line[3] for line in splited_lines]
+        for speaker, gender, accent in zip(speakers, genders, accents):
+            speaker_info[speaker] = {'gender':gender, 'accent':accent}
+    speaker_info['280'] = {'gender':'F', 'accent':'Unknown'}
+    return speaker_info
+    
 
 def process_data(wav_dir, output_path, mel_path, wav_path, prefix=None):
     """
@@ -115,10 +126,14 @@ if __name__=="__main__":
 
     # process data
     wav_dirs = os.listdir(wav_dir)
+    speaker_info = get_info(wav_dir)
+
     #for i, wav_file in enumerate(tqdm(wav_files)):
     dataset_ids = []
     for i, each_wav_dir in enumerate(tqdm(wav_dirs)):
-        if i >= start_id:
+        speaker = os.path.basename(each_wav_dir)[1:]
+        condition = speaker_info[speaker]['accent'] == 'English'
+        if i >= start_id and condition:
             dataset_ids += process_data(os.path.join(wav_dir, each_wav_dir),
                      output_path,
                      mel_path,
