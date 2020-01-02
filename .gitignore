@@ -1,3 +1,7 @@
+checkpoints/
+data_dir/
+test_data_dir/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

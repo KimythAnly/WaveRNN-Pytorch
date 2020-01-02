@@ -7,7 +7,8 @@ options:
     --checkpoint=<path>         Restore model from checkpoint path if given.
     -h, --help                  Show this help message and exit
 """
-from docopt import docopt
+#from docopt import docopt
+from parser import get_parser
 
 import os
 from os.path import dirname, join, expanduser
@@ -36,6 +37,21 @@ global_step = 0
 global_epoch = 0
 global_test_step = 0
 use_cuda = torch.cuda.is_available()
+
+import random
+
+def same_seeds(seed):
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)  # if you are using multi-GPU.
+    np.random.seed(seed)  # Numpy module.
+    random.seed(seed)  # Python random module.
+    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.deterministic = True
+
+same_seeds(0)
+
 
 def save_checkpoint(device, model, optimizer, step, checkpoint_dir, epoch):
     checkpoint_path = join(
@@ -181,13 +197,29 @@ def train_loop(device, model, data_loader, optimizer, checkpoint_dir):
         global_epoch += 1
 
 
+def get_args():
+    """Training WaveRNN Model.
+
+    usage: train.py [options] <data-root>
+
+    options:
+        --checkpoint-dir=<dir>      Directory where to save model checkpoints [default: checkpoints].
+        --checkpoint=<path>         Restore model from checkpoint path if given.
+        -h, --help                  Show this help message and exit
+    """
+    parser = get_parser(description="Training WaveRNN Model")
+    parser.add_argument('data_root', type=str, help='Preprocessed data dir.')
+    parser.add_argument('--checkpoint-dir', type=str, default='checkpoints', help='Directory where to save model checkpoints')
+    parser.add_argument('--checkpoint', type=str, default=None, help='Restore model from checkpoint path if given.')
+
+    return parser.parse_args()
 
 if __name__=="__main__":
-    args = docopt(__doc__)
+    args = get_args()
     #print("Command line args:\n", args)
-    checkpoint_dir = args["--checkpoint-dir"]
-    checkpoint_path = args["--checkpoint"]
-    data_root = args["<data-root>"]
+    checkpoint_dir = args.checkpoint_dir
+    checkpoint_path = args.checkpoint
+    data_root = args.data_root
 
     # make dirs, load dataloader and set up device
     os.makedirs(checkpoint_dir, exist_ok=True)

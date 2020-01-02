@@ -8,7 +8,7 @@ class hparams:
     # 3. bits [0, 512]
     # 4. mulaw[0, mulaw_quantize_channels]
     #
-    input_type = 'bits'
+    input_type = 'mulaw'
     #
     # distribution type, currently supports only 'beta' and 'mixture'
     distribution = 'gaussian' # or "mixture"
@@ -26,7 +26,7 @@ class hparams:
     num_mels = 80
     fmin = 125
     fmax = 7600
-    fft_size = 2048
+    fft_size = 1024
     hop_size = 256
     win_length = 1024
     sample_rate = 16000
@@ -35,7 +35,6 @@ class hparams:
     ref_level_db = 20
     rescaling = False
     rescaling_max = 0.999
-    power = 1.4
     allow_clipping_in_normalization = True
     #----------------
     #

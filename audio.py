@@ -3,6 +3,7 @@ import librosa.filters
 import math
 import numpy as np
 from scipy import signal
+from scipy.io import wavfile
 from hparams import hparams
 from scipy.io import wavfile
 
@@ -11,7 +12,18 @@ import lws
 
 
 def load_wav(path):
-    return librosa.load(path, sr=hparams.sample_rate)[0]
+    try:
+        sr, x = wavfile.read(path)
+    except:
+        print(f'Error: {path} is invalid.')
+    signed_int16_max = 2**15
+    if x.dtype == np.int16:
+        x = x.astype(np.float32) / signed_int16_max
+    if sr != hparams.sample_rate:
+        x = librosa.resample(x, sr, hparams.sample_rate)
+    x = np.clip(x, -1.0, 1.0)
+    return x
+
 
 def save_wav(wav, path):
     wav = wav * 32767 / max(0.01, np.max(np.abs(wav)))
@@ -50,6 +62,14 @@ def melspectrogram(y):
         assert S.max() <= 0 and S.min() - hparams.min_level_db >= 0
     return _normalize(S)
 
+def inv_melspectrogram(melspectrogram):
+    '''Converts spectrogram to waveform using librosa'''
+    S = _db_to_amp(_denormalize(melspectrogram) + hparams.ref_level_db)  # Convert back to linear
+    S = _mel_to_linear(S)
+    processor = _lws_processor()
+    D = processor.run_lws(S.astype(np.float64).T ** hparams.power)
+    y = processor.istft(D).astype(np.float32)
+    return inv_preemphasis(y)
 
 def _lws_processor():
     return lws.lws(hparams.fft_size, hparams.hop_size, mode="speech")
@@ -66,6 +86,19 @@ def _linear_to_mel(spectrogram):
     if _mel_basis is None:
         _mel_basis = _build_mel_basis()
     return np.dot(_mel_basis, spectrogram)
+
+def _mel_to_linear(melspectrogram):
+    def _mel_to_linear_matrix():
+        global _mel_basis
+        if _mel_basis is None:
+            _mel_basis = _build_mel_basis()
+        m_t = np.transpose(_mel_basis)
+        p = np.matmul(_mel_basis, m_t)
+        d = [1.0 / x if np.abs(x) > 1.0e-8 else x for x in np.sum(p, axis=0)]
+        return np.matmul(m_t, np.diag(d))
+    m = _mel_to_linear_matrix()
+    mag = np.dot(m, melspectrogram)
+    return mag
 
 
 def _build_mel_basis():
