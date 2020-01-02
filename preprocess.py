@@ -39,6 +39,7 @@ def get_wav_mel(path):
 
 
 def get_info(wav_dir):
+    speaker_info = {}
     path_from = os.path.join(wav_dir, '..')
     with open(os.path.join(path_from, 'speaker-info.txt'), 'r') as f:
         splited_lines = [line.strip().split() for line in f][1:]
